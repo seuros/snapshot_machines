@@ -53,6 +53,17 @@ impl Wrapper {
     const fn capacity(&self) -> usize {
         CAPACITY
     }
+    /// Rejects a pending handle that some other catalog issued.
+    fn owns(&self, ruby: &Ruby, attempt: &Attempt) -> Result<(), Error> {
+        if Arc::ptr_eq(&self.owner, &attempt.owner) {
+            Ok(())
+        } else {
+            Err(Error::new(
+                ruby.exception_arg_error(),
+                "pending handle belongs to another catalog",
+            ))
+        }
+    }
     fn begin(rb_self: Obj<Self>, base: Option<Id>) -> Result<Option<Attempt>, Error> {
         rb_self.check_frozen()?;
         let pending = rb_self
@@ -71,12 +82,7 @@ impl Wrapper {
         checksum: Id,
     ) -> Result<Option<(u64, Option<u64>, u64)>, Error> {
         rb_self.check_frozen()?;
-        if !Arc::ptr_eq(&rb_self.owner, &attempt.owner) {
-            return Err(Error::new(
-                ruby.exception_arg_error(),
-                "pending handle belongs to another catalog",
-            ));
-        }
+        rb_self.owns(ruby, attempt)?;
         let result = rb_self
             .catalog
             .borrow_mut()
@@ -85,12 +91,7 @@ impl Wrapper {
     }
     fn abort(ruby: &Ruby, rb_self: Obj<Self>, attempt: &Attempt) -> Result<bool, Error> {
         rb_self.check_frozen()?;
-        if !Arc::ptr_eq(&rb_self.owner, &attempt.owner) {
-            return Err(Error::new(
-                ruby.exception_arg_error(),
-                "pending handle belongs to another catalog",
-            ));
-        }
+        rb_self.owns(ruby, attempt)?;
         Ok(rb_self.catalog.borrow_mut().abort(attempt.pending))
     }
     fn latest(&self) -> Option<(u64, Option<u64>, u64)> {
