@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/seuros/snapshot_machines/compare/snapshot-machines-v0.2.1...snapshot-machines-v0.2.2) (2026-11-06)
+
+
+### Bug Fixes
+
+* crates.io keywords and categories for the core ([f544853](https://github.com/seuros/snapshot_machines/commit/f544853222f20d5e56b58199641258a676455f61))
+
 ## [0.2.1](https://github.com/seuros/snapshot_machines/compare/snapshot-machines-v0.2.0...snapshot-machines-v0.2.1) (2026-11-06)
 
 
