@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/seuros/snapshot_machines/compare/snapshot_machines/v0.1.4...snapshot_machines/v0.1.5) (2026-11-06)
+
+
+### Bug Fixes
+
+* extract catalog ownership check for commit/abort ([f501351](https://github.com/seuros/snapshot_machines/commit/f5013515b918dfb5627939ae2d06b191298b5a85))
+
 ## [0.1.4](https://github.com/seuros/snapshot_machines/compare/snapshot_machines/v0.1.3...snapshot_machines/v0.1.4) (2026-11-06)
 
 
