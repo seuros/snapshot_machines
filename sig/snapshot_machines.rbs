@@ -1,0 +1,15 @@
+module SnapshotMachines
+  VERSION: String
+  class Pending
+    def id: () -> Integer
+  end
+  class Catalog
+    def self.new: () -> Catalog
+    def capacity: () -> Integer
+    def begin: (Integer?) -> Pending?
+    def commit: (Pending, Integer) -> [Integer, Integer?, Integer]?
+    def abort: (Pending) -> bool
+    def latest: () -> [Integer, Integer?, Integer]?
+    def restore_plan: (Integer) -> Array[[Integer, Integer?, Integer]]?
+  end
+end

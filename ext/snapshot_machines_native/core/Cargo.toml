@@ -1,0 +1,10 @@
+[package]
+name = "snapshot-machines"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Bounded full/incremental checkpoint manifest lifecycle"
+readme = "README.md"
+[lints]
+workspace = true
