@@ -1,15 +1,100 @@
 module SnapshotMachines
   VERSION: String
-  class Pending
-    def id: () -> Integer
+
+  # Every value class below is sealed: subclassing raises TypeError and
+  # `allocate` is undefined. The catalog reads only instances of exactly
+  # these classes (TypeError for a subclass) and re-validates each through the
+  # core (RangeError), a marshalled one included.
+
+  # Refusals: the call was not honoured and changed nothing. Every reason has
+  # its own symbol; there is no catch-all, and a refusal never raises.
+  # (:undersized exists in the core for a short output buffer; the gem always
+  # passes a full one, so no method answers it.)
+  type refusal = :busy | :chain_full | :not_latest | :exhausted | :stale | :mismatch
+
+  # `SnapshotId::from_raw`: TypeError for a non-Integer; RangeError for a
+  # negative Integer, one past 2**64 - 1, or a zero sequence (low 48 bits).
+  class SnapshotId < Data
+    attr_reader raw: Integer
+    def self.new: (Integer raw) -> SnapshotId
+                | (raw: Integer) -> SnapshotId
+    # The scope (0..65_535) of the catalog that issued this id.
+    def scope: () -> Integer
   end
+
+  # `Pending::new`: TypeError unless `id` is a SnapshotId and `base` a
+  # SnapshotId or nil; RangeError when `base` is of another scope or not
+  # issued before `id`.
+  class Pending < Data
+    attr_reader id: SnapshotId
+    attr_reader base: SnapshotId?
+    def self.new: (SnapshotId id, SnapshotId? base) -> Pending
+                | (id: SnapshotId, base: SnapshotId?) -> Pending
+  end
+
+  # `Manifest::new`: the rules of Pending, plus `checksum` an Integer in
+  # 0..2**64 - 1 (TypeError, RangeError).
+  class Manifest < Data
+    attr_reader id: SnapshotId
+    attr_reader base: SnapshotId?
+    attr_reader checksum: Integer
+    def self.new: (SnapshotId id, SnapshotId? base, Integer checksum) -> Manifest
+                | (id: SnapshotId, base: SnapshotId?, checksum: Integer) -> Manifest
+  end
+
+  # `Committing::Committed`. TypeError unless `manifest` is exactly a
+  # Manifest; RangeError when the core refuses its fields.
+  class Committed < Data
+    attr_reader manifest: Manifest
+    def self.new: (Manifest manifest) -> Committed
+                | (manifest: Manifest) -> Committed
+  end
+
+  # `Committing::AlreadyCommitted`. TypeError unless `manifest` is exactly a
+  # Manifest; RangeError when the core refuses its fields.
+  class AlreadyCommitted < Data
+    attr_reader manifest: Manifest
+    def self.new: (Manifest manifest) -> AlreadyCommitted
+                | (manifest: Manifest) -> AlreadyCommitted
+  end
+
   class Catalog
+    # Empty, scope zero.
     def self.new: () -> Catalog
+    # Empty; `scope` is an Integer in 0..65_535 (TypeError, RangeError),
+    # carried in the top 16 bits of every id.
+    def self.with_scope: (Integer scope) -> Catalog
+    # The constructor for a restart: the id sequence continues after `issued`
+    # (a saved `#issued`) and the chain (a saved restore plan of `#latest`,
+    # oldest first) is rebuilt; no attempt is restored. RangeError for saved
+    # state that cannot exist: `issued` beyond 2**48 - 1, more than 32
+    # manifests, an id of another scope or past `issued`, a chain that does
+    # not start full or whose bases do not link. TypeError unless `chain` is
+    # an Array of Manifest.
+    def self.restored: (Integer scope, Integer issued, Array[Manifest] chain) -> Catalog
+    def scope: () -> Integer
+    # Ids issued so far: the count to save for `restored`.
+    def issued: () -> Integer
+    # The most manifests the chain holds: 32.
     def capacity: () -> Integer
-    def begin: (Integer?) -> Pending?
-    def commit: (Pending, Integer) -> [Integer, Integer?, Integer]?
-    def abort: (Pending) -> bool
-    def latest: () -> [Integer, Integer?, Integer]?
-    def restore_plan: (Integer) -> Array[[Integer, Integer?, Integer]]?
+    # Honoured: Pending. Refused: :stale (base not issued here), :busy,
+    # :not_latest, :chain_full, :exhausted. TypeError unless `base` is a
+    # SnapshotId or nil. Not applied when building the Pending raises (that
+    # exception), freezes the catalog (FrozenError) or changes it (RuntimeError).
+    def begin: (SnapshotId? base) -> (Pending | :stale | :busy | :not_latest | :chain_full | :exhausted)
+    # Honoured: Committed, AlreadyCommitted (same attempt, same checksum,
+    # manifest still in the chain). Refused: :stale, :mismatch. Not applied
+    # when building the answer raises, freezes the catalog (FrozenError) or
+    # changes it (RuntimeError).
+    def commit: (Pending pending, Integer checksum) -> (Committed | AlreadyCommitted | :stale | :mismatch)
+    # Honoured: :aborted, :already_aborted (the most recently aborted
+    # attempt). Refused: :stale, :mismatch.
+    def abort: (Pending pending) -> (:aborted | :already_aborted | :stale | :mismatch)
+    # The open attempt, or nil. Never refuses.
+    def pending: () -> Pending?
+    # The latest committed manifest, or nil. Never refuses.
+    def latest: () -> Manifest?
+    # Honoured: the full-to-target chain, oldest first. Refused: :stale.
+    def restore_plan: (SnapshotId target) -> (Array[Manifest] | :stale)
   end
 end
