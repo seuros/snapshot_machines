@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/seuros/snapshot_machines/compare/snapshot_machines/v0.3.0...snapshot_machines/v0.3.1) (2026-11-14)
+
+
+### Bug Fixes
+
+* **deps:** require matryona-machines &gt;= 0.3 and read bases with optional_fields ([8eefed6](https://github.com/seuros/snapshot_machines/commit/8eefed6a45d03f905334f70513dd121134803c6c))
+
 ## [0.3.0](https://github.com/seuros/snapshot_machines/compare/snapshot_machines/v0.2.0...snapshot_machines/v0.3.0) (2026-11-14)
 
 
