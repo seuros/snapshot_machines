@@ -88,7 +88,7 @@ class ForgedTest < Minitest::Test
     assert_raises(RangeError) { Catalog.restored(0, 2, [sunday, looped]) }
   end
 
-  # Classes compare by pointer: a singleton class on a real value does not
+  # Classes compare natively: a singleton class on a real value does not
   # change what it is, and a redefined `==` on a forged class fools nothing.
   def test_exact_class_ignores_singletons_and_redefined_equality
     catalog = Catalog.new
@@ -101,7 +101,55 @@ class ForgedTest < Minitest::Test
     assert_raises(TypeError) { catalog.restore_plan(fake) }
   end
 
+  def test_an_array_subclass_chain_is_refused
+    catalog = Catalog.new
+    sunday = full(catalog, 1)
+    error = assert_raises(TypeError) { Catalog.restored(0, 1, Class.new(Array)[sunday]) }
+    assert_equal 'chain must be an Array of SnapshotMachines::Manifest', error.message
+    assert_equal sunday, Catalog.restored(0, 1, [sunday]).latest
+  end
+
+  # Runs the block with every reader in `names` of `klass` raising.
+  def with_raising_readers(klass, *names)
+    names.each do |name|
+      klass.alias_method(:"__original_#{name}", name)
+      klass.define_method(name) { raise "a reader ran: #{name}" }
+    end
+    yield
+  ensure
+    names.each do |name|
+      klass.alias_method(name, :"__original_#{name}")
+      klass.remove_method(:"__original_#{name}")
+    end
+  end
+
+  # Fields are read from the struct itself: a redefined reader is never run.
+  def test_a_redefined_reader_is_ignored
+    catalog = Catalog.new
+    sunday = full(catalog, 1)
+    attempt = catalog.begin(sunday.id)
+    raw = sunday.id.raw
+    with_raising_readers(SnapshotId, :raw) do
+      with_raising_readers(Pending, :id, :base) do
+        with_raising_readers(Manifest, :id, :base, :checksum) do
+          assert_equal 1, catalog.restore_plan(SnapshotId.new(raw)).size
+          assert_instance_of Committed, catalog.commit(attempt, 2)
+          assert_equal 1, Catalog.restored(0, 1, [sunday]).issued
+        end
+      end
+    end
+    assert_equal [sunday], Catalog.restored(0, 1, [sunday]).restore_plan(sunday.id)
+  end
+
   def test_hooks_are_private
     refute_respond_to SnapshotMachines, :__holds_manifest
+  end
+
+  def test_the_extension_alone_is_a_name_error
+    lib = File.expand_path('../lib', __dir__)
+    script = 'begin; require "snapshot_machines_native/snapshot_machines_native"; ' \
+             'rescue NameError => e; print e.class; end'
+    output = IO.popen([RbConfig.ruby, '-I', lib, '-e', script], err: %i[child out], &:read)
+    assert_equal 'NameError', output
   end
 end

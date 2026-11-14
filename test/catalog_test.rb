@@ -92,4 +92,13 @@ class CatalogTest < Minitest::Test
     assert_raises(FrozenError) { catalog.commit(attempt, 2) }
     assert_equal attempt, catalog.pending
   end
+
+  def test_frozen_is_checked_before_the_arguments
+    catalog = Catalog.new
+    catalog.begin(nil)
+    catalog.freeze
+    assert_raises(FrozenError) { catalog.begin(1) }
+    assert_raises(FrozenError) { catalog.abort(Object.new) }
+    assert_raises(FrozenError) { catalog.commit(nil, 0.5) }
+  end
 end

@@ -1,5 +1,6 @@
 //! Randomized runs against an independent naive model.
 
+use matryona_machines::testing::SplitMix64;
 use std::vec::Vec;
 
 use super::*;
@@ -128,26 +129,14 @@ impl Model {
     }
 }
 
-struct Draws(u64);
-
-impl Draws {
-    fn below(&mut self, bound: u64) -> u64 {
-        // splitmix64
-        self.0 = self.0.wrapping_add(0x9E37_79B9_7F4A_7C15);
-        let mut z = self.0;
-        z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
-        z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
-        (z ^ (z >> 31)) % bound
-    }
-
-    fn index(&mut self, len: usize) -> usize {
-        usize::try_from(self.below(len as u64)).expect("below a usize bound")
-    }
+/// A draw in `0..len`.
+fn index(draws: &mut SplitMix64, len: usize) -> usize {
+    usize::try_from(draws.below(len as u64)).expect("below a usize bound")
 }
 
 /// An id to feed the catalog: one it issued, the next one, or one of
 /// another scope with the same sequence.
-fn some_id(draws: &mut Draws, model: &Model) -> u64 {
+fn some_id(draws: &mut SplitMix64, model: &Model) -> u64 {
     let sequence = 1 + draws.below(model.issued + 1);
     if draws.below(5) == 0 {
         let other = model
@@ -160,9 +149,9 @@ fn some_id(draws: &mut Draws, model: &Model) -> u64 {
 
 /// An attempt to hand back: one really begun, or one rebuilt with another
 /// base or another scope.
-fn some_attempt(draws: &mut Draws, model: &Model) -> (u64, Option<u64>) {
+fn some_attempt(draws: &mut SplitMix64, model: &Model) -> (u64, Option<u64>) {
     if !model.attempts.is_empty() && draws.below(4) != 0 {
-        let pick = model.attempts[draws.index(model.attempts.len())];
+        let pick = model.attempts[index(draws, model.attempts.len())];
         if draws.below(6) != 0 {
             return pick;
         }
@@ -190,7 +179,7 @@ fn agree<const N: usize>(catalog: &Catalog<N>, model: &Model) {
 }
 
 fn run_against_model<const N: usize>(scope: u16, seed: u64, steps: usize) {
-    let mut draws = Draws(seed);
+    let mut draws = SplitMix64::new(seed);
     let mut catalog = Catalog::<N>::with_scope(scope);
     let mut model = Model {
         scope,
@@ -243,7 +232,7 @@ fn run_against_model<const N: usize>(scope: u16, seed: u64, steps: usize) {
             }
             7 => {
                 let target = some_id(&mut draws, &model);
-                let room = draws.index(N + 2);
+                let room = index(&mut draws, N + 2);
                 let mut out = [Manifest::default(); 8];
                 let got = catalog.restore_plan(id(target), &mut out[..room]);
                 let want = model.plan(target, room);

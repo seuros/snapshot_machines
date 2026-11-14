@@ -15,14 +15,14 @@ fn full_incremental_and_restore_chains_are_complete() {
     assert_eq!(delta.base(), Some(full.id()));
     assert_eq!(plan(&catalog, delta.id()), Ok(std::vec![full, delta]));
     assert_eq!(plan(&catalog, full.id()), Ok(std::vec![full]));
-    refused(&mut catalog, Refusal::ChainFull, |c| {
+    refuses(&mut catalog, Refusal::ChainFull, |c| {
         c.begin(Some(delta.id()))
     });
     let replacement = begun(&mut catalog, None);
     assert_eq!(catalog.latest(), Some(delta));
     assert_eq!(plan(&catalog, delta.id()), Ok(std::vec![full, delta]));
     let replacement = committed(&mut catalog, replacement, 33);
-    refused(&mut catalog, Refusal::Stale, |c| plan(c, full.id()));
+    refuses(&mut catalog, Refusal::Stale, |c| plan(c, full.id()));
     assert_eq!(plan(&catalog, replacement.id()), Ok(std::vec![replacement]));
 }
 
@@ -30,27 +30,27 @@ fn full_incremental_and_restore_chains_are_complete() {
 fn begin_refusals_name_each_reason_and_change_nothing() {
     let mut catalog = Catalog::<2>::new();
     // Never issued: refused before anything else is looked at.
-    refused(&mut catalog, Refusal::Stale, |c| c.begin(Some(id(1))));
+    refuses(&mut catalog, Refusal::Stale, |c| c.begin(Some(id(1))));
     let full = begun(&mut catalog, None);
-    refused(&mut catalog, Refusal::Busy, |c| c.begin(None));
-    refused(&mut catalog, Refusal::Busy, |c| c.begin(Some(full.id())));
-    refused(&mut catalog, Refusal::Stale, |c| c.begin(Some(id(9))));
+    refuses(&mut catalog, Refusal::Busy, |c| c.begin(None));
+    refuses(&mut catalog, Refusal::Busy, |c| c.begin(Some(full.id())));
+    refuses(&mut catalog, Refusal::Stale, |c| c.begin(Some(id(9))));
     let full = committed(&mut catalog, full, 1);
     let delta = begun(&mut catalog, Some(full.id()));
     let delta = committed(&mut catalog, delta, 2);
-    refused(&mut catalog, Refusal::NotLatest, |c| {
+    refuses(&mut catalog, Refusal::NotLatest, |c| {
         c.begin(Some(full.id()))
     });
-    refused(&mut catalog, Refusal::ChainFull, |c| {
+    refuses(&mut catalog, Refusal::ChainFull, |c| {
         c.begin(Some(delta.id()))
     });
     let aborted = begun(&mut catalog, None);
     assert_eq!(catalog.abort(aborted), Ok(Aborting::Aborted));
-    refused(&mut catalog, Refusal::NotLatest, |c| {
+    refuses(&mut catalog, Refusal::NotLatest, |c| {
         c.begin(Some(aborted.id()))
     });
     let mut empty = Catalog::<0>::new();
-    refused(&mut empty, Refusal::ChainFull, |c| c.begin(None));
+    refuses(&mut empty, Refusal::ChainFull, |c| c.begin(None));
 }
 
 #[test]
@@ -63,9 +63,9 @@ fn an_exhausted_sequence_refuses_begin_without_consuming() {
         periscope_machines::SEQUENCE_MAX
     );
     let last = committed(&mut catalog, last, 5);
-    refused(&mut catalog, Refusal::Exhausted, |c| c.begin(None));
+    refuses(&mut catalog, Refusal::Exhausted, |c| c.begin(None));
     // Capacity is judged before the sequence.
-    refused(&mut catalog, Refusal::ChainFull, |c| {
+    refuses(&mut catalog, Refusal::ChainFull, |c| {
         c.begin(Some(last.id()))
     });
     assert_eq!(plan(&catalog, last.id()), Ok(std::vec![last]));
@@ -81,7 +81,7 @@ fn aborts_keep_old_checkpoints_and_never_reuse_ids() {
         new.id().raw() > old.id().raw(),
         "an aborted id was reissued"
     );
-    refused(&mut catalog, Refusal::Stale, |c| c.commit(old, 0));
+    refuses(&mut catalog, Refusal::Stale, |c| c.commit(old, 0));
     committed(&mut catalog, new, 1);
 }
 

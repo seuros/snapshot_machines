@@ -12,8 +12,8 @@ fn a_catalog_refuses_another_scopes_pending() {
     assert_eq!(foreign.scope(), 1);
     assert_eq!(foreign.id().raw() & periscope_machines::SEQUENCE_MAX, 1);
     assert_eq!(local.id().raw() & periscope_machines::SEQUENCE_MAX, 1);
-    refused(&mut b, Refusal::Stale, |c| c.commit(foreign, 1));
-    refused(&mut b, Refusal::Stale, |c| c.abort(foreign));
+    refuses(&mut b, Refusal::Stale, |c| c.commit(foreign, 1));
+    refuses(&mut b, Refusal::Stale, |c| c.abort(foreign));
     committed(&mut b, local, 1);
 }
 
@@ -29,8 +29,8 @@ fn a_catalog_refuses_another_scopes_ids_as_base_and_restore_target() {
         ma.id().raw() & periscope_machines::SEQUENCE_MAX,
         mb.id().raw()
     );
-    refused(&mut b, Refusal::Stale, |c| plan(c, ma.id()));
-    refused(&mut b, Refusal::Stale, |c| c.begin(Some(ma.id())));
+    refuses(&mut b, Refusal::Stale, |c| plan(c, ma.id()));
+    refuses(&mut b, Refusal::Stale, |c| c.begin(Some(ma.id())));
     assert_eq!(plan(&b, mb.id()), Ok(std::vec![mb]));
 }
 
@@ -62,15 +62,15 @@ fn a_restored_catalog_keeps_the_chain_and_refuses_handles_from_before_the_restar
         (9, issued, before.latest(), None)
     );
     assert_eq!(plan(&after, chain[1].id()), Ok(chain.clone()));
-    refused(&mut after, Refusal::Stale, |c| c.commit(survivor, 3));
-    refused(&mut after, Refusal::Stale, |c| c.abort(survivor));
-    refused(&mut after, Refusal::NotLatest, |c| {
+    refuses(&mut after, Refusal::Stale, |c| c.commit(survivor, 3));
+    refuses(&mut after, Refusal::Stale, |c| c.abort(survivor));
+    refuses(&mut after, Refusal::NotLatest, |c| {
         c.begin(Some(chain[0].id()))
     });
     let repeat = Pending::new(chain[1].id(), chain[1].base()).expect("valid");
     // A manifest still in the chain proves its repeat.
     let again = Committing::AlreadyCommitted(chain[1]);
-    repeated(&mut after, again, |c| c.commit(repeat, 2));
+    assert_eq!(unchanged(&mut after, |c| c.commit(repeat, 2)), Ok(again));
     let next = begun(&mut after, Some(chain[1].id()));
     assert!(
         next.id().raw() > survivor.id().raw(),
@@ -80,8 +80,8 @@ fn a_restored_catalog_keeps_the_chain_and_refuses_handles_from_before_the_restar
     // An empty chain restores only the sequence.
     let mut bare = Catalog::<3>::restored(9, issued, &[]).expect("saved state");
     assert_eq!(bare.latest(), None);
-    refused(&mut bare, Refusal::Stale, |c| plan(c, chain[0].id()));
-    refused(&mut bare, Refusal::NotLatest, |c| {
+    refuses(&mut bare, Refusal::Stale, |c| plan(c, chain[0].id()));
+    refuses(&mut bare, Refusal::NotLatest, |c| {
         c.begin(Some(chain[1].id()))
     });
 }

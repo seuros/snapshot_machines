@@ -1,6 +1,7 @@
 extern crate std;
 
 use super::*;
+use matryona_machines::testing::{refuses, unchanged};
 
 mod chain;
 mod model;
@@ -37,32 +38,4 @@ fn plan<const N: usize>(
     let mut out = [Manifest::default(); 64];
     let written = catalog.restore_plan(target, &mut out)?;
     Ok(out[..written].to_vec())
-}
-
-/// Run `call` on `catalog`, insisting it is refused with `refusal` and
-/// changes nothing.
-fn refused<const N: usize, T: core::fmt::Debug>(
-    catalog: &mut Catalog<N>,
-    refusal: Refusal,
-    call: impl FnOnce(&mut Catalog<N>) -> Result<T, Refusal>,
-) {
-    let before = catalog.clone();
-    let answer = call(catalog);
-    match answer {
-        Err(got) => assert_eq!(got, refusal),
-        Ok(honoured) => panic!("expected {refusal:?}, got Ok({honoured:?})"),
-    }
-    assert_eq!(*catalog, before, "a refusal changed the catalog");
-}
-
-/// Run `call` on `catalog`, insisting it is honoured with `answer` (a repeat)
-/// and changes nothing.
-fn repeated<const N: usize, T: Copy + core::fmt::Debug + PartialEq>(
-    catalog: &mut Catalog<N>,
-    answer: T,
-    call: impl FnOnce(&mut Catalog<N>) -> Result<T, Refusal>,
-) {
-    let before = catalog.clone();
-    assert_eq!(call(catalog), Ok(answer));
-    assert_eq!(*catalog, before, "an honoured repeat changed the catalog");
 }

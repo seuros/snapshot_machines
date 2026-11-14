@@ -12,5 +12,8 @@ categories = ["no-std", "algorithms"]
 [dependencies]
 periscope-machines.workspace = true
 
+[dev-dependencies]
+matryona-machines = { workspace = true, features = ["testing"] }
+
 [lints]
 workspace = true
