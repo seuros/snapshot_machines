@@ -3,7 +3,7 @@
 //! and always re-validated by the core: a forged one raises before any core
 //! call and never earns a refusal symbol.
 use magnus::{Error, Ruby, Value, prelude::*};
-use matryona_machines::ruby::{Symbols, exact_fields, integer};
+use matryona_machines::ruby::{Symbols, exact_fields, integer, optional_fields};
 use snapshot_machines::{Aborting, Manifest, Pending, Refusal, SnapshotId};
 
 use crate::classes::Classes;
@@ -60,10 +60,15 @@ pub fn snapshot_id(ruby: &Ruby, value: Value) -> Result<SnapshotId, Error> {
 
 /// A base: `nil` or a Ruby `SnapshotId`.
 pub fn base(ruby: &Ruby, value: Value) -> Result<Option<SnapshotId>, Error> {
-    if value.is_nil() {
-        return Ok(None);
-    }
-    snapshot_id(ruby, value).map(Some)
+    let class = Classes::get(ruby)?.id_class(ruby);
+    optional_fields(
+        ruby,
+        value,
+        class,
+        "expected a SnapshotMachines::SnapshotId",
+    )?
+    .map(|[raw]| id_of(ruby, raw))
+    .transpose()
 }
 
 fn links(ruby: &Ruby) -> Error {
