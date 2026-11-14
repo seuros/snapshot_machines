@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0](https://github.com/seuros/snapshot_machines/compare/snapshot-machines-v0.2.2...snapshot-machines-v0.3.0) (2026-11-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* scoped snapshot ids, Catalog::restored rebuilds the chain, private Manifest fields, exact-class boundary, clone-then-keep begin/commit
+
+### Features
+
+* scoped snapshot ids, Catalog::restored rebuilds the chain, private Manifest fields, exact-class boundary, clone-then-keep begin/commit ([21d16cd](https://github.com/seuros/snapshot_machines/commit/21d16cde3829ab1a389295c6e4d3b1e04faeb2a2))
+
 ## [0.2.2](https://github.com/seuros/snapshot_machines/compare/snapshot-machines-v0.2.1...snapshot-machines-v0.2.2) (2026-11-06)
 
 
