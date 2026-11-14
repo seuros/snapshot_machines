@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0](https://github.com/seuros/snapshot_machines/compare/snapshot_machines/v0.2.0...snapshot_machines/v0.3.0) (2026-11-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* adopt matryona-machines 0.2 (exact_fields, exact_array, symbols!, frozen-first)
+
+### Features
+
+* adopt matryona-machines 0.2 (exact_fields, exact_array, symbols!, frozen-first) ([3db1cfb](https://github.com/seuros/snapshot_machines/commit/3db1cfb3ad41909d03075942fb5dbfe0cdc795af))
+
 ## [0.2.0](https://github.com/seuros/snapshot_machines/compare/snapshot_machines/v0.1.5...snapshot_machines/v0.2.0) (2026-11-14)
 
 
