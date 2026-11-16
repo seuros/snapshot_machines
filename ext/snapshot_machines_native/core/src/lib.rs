@@ -1,4 +1,5 @@
 #![no_std]
+#![cfg_attr(not(test), deny(clippy::indexing_slicing))]
 #![doc = include_str!("../README.md")]
 
 mod refusal;
@@ -225,10 +226,14 @@ impl<const N: usize> Catalog<N> {
     /// Latest committed manifest.
     #[must_use]
     pub const fn latest(&self) -> Option<Manifest> {
-        if self.len == 0 {
-            return None;
+        // `len` never passes `N`; a miss would be no chain, as `chain` reads it.
+        match self.manifests.split_at_checked(self.len) {
+            Some((chain, _)) => match chain.last() {
+                Some(latest) => *latest,
+                None => None,
+            },
+            None => None,
         }
-        self.manifests[self.len - 1]
     }
 
     /// Copy the full-to-target restore chain into `out`, oldest first, and
@@ -247,13 +252,15 @@ impl<const N: usize> Catalog<N> {
             .iter()
             .position(|entry| entry.is_some_and(|entry| entry.id() == target))
             .ok_or(Refusal::Stale)?;
-        let plan = &chain[..=at];
-        let Some(room) = out.get_mut(..plan.len()) else {
+        // `at` is a position in `chain`, so `at + 1` is at most its length.
+        let planned = at + 1;
+        let Some(room) = out.get_mut(..planned) else {
             return Err(Refusal::Undersized);
         };
         let mut written = 0;
-        for (slot, entry) in room.iter_mut().zip(plan.iter().flatten()) {
+        for (slot, entry) in room.iter_mut().zip(chain.iter().take(planned).flatten()) {
             *slot = *entry;
+            // At most `planned`.
             written += 1;
         }
         Ok(written)
@@ -285,16 +292,22 @@ impl<const N: usize> Catalog<N> {
 
     /// Record the open attempt as a manifest.
     fn publish(&mut self, open: Pending, checksum: u64) -> Result<Committing, Refusal> {
-        let slot = if open.base().is_some() { self.len } else { 0 };
-        if slot >= N {
+        let full = open.base().is_none();
+        let slot = if full { 0 } else { self.len };
+        let manifest = Manifest::committed(open, checksum);
+        let Some(entry) = self.manifests.get_mut(slot) else {
             debug_assert!(false, "begin left room in the chain for the open attempt");
             return Err(Refusal::ChainFull);
+        };
+        *entry = Some(manifest);
+        if full {
+            // A full snapshot starts a new chain at slot zero.
+            self.manifests
+                .iter_mut()
+                .skip(1)
+                .for_each(|old| *old = None);
         }
-        let manifest = Manifest::committed(open, checksum);
-        if open.base().is_none() {
-            self.manifests = [None; N];
-        }
-        self.manifests[slot] = Some(manifest);
+        // `slot < N`, as `get_mut` just proved.
         self.len = slot + 1;
         self.attempt = None;
         Ok(Committing::Committed(manifest))

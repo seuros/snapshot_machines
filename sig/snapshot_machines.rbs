@@ -12,6 +12,15 @@ module SnapshotMachines
   # passes a full one, so no method answers it.)
   type refusal = :busy | :chain_full | :not_latest | :exhausted | :stale | :mismatch
 
+  # Private native checks behind the values, TypeError/RangeError where the
+  # core has no such value. `__snapshot_id` answers the raw id as the core
+  # holds it; `__scope_of` reads exactly a SnapshotId from its struct.
+  private def self.__snapshot_id: (Integer raw) -> Integer
+  private def self.__scope_of: (SnapshotId id) -> Integer
+  private def self.__pending: (SnapshotId id, SnapshotId? base) -> nil
+  private def self.__manifest: (SnapshotId id, SnapshotId? base, Integer checksum) -> nil
+  private def self.__holds_manifest: (Manifest manifest) -> nil
+
   # `SnapshotId::from_raw`: TypeError for a non-Integer; RangeError for a
   # negative Integer, one past 2**64 - 1, or a zero sequence (low 48 bits).
   class SnapshotId < Data

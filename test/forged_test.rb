@@ -109,6 +109,17 @@ class ForgedTest < Minitest::Test
     assert_equal sunday, Catalog.restored(0, 1, [sunday]).latest
   end
 
+  # `SnapshotId#scope` reads the id natively: a redefined reader is never
+  # called, and a `raw` `Marshal.load` rewrote to sequence zero is RangeError.
+  def test_scope_reads_the_id_natively
+    id = SnapshotId.new((6 << 48) | 1)
+    with_raising_readers(SnapshotId, :raw) { assert_equal 6, id.scope }
+    zero = remarshal(SnapshotId.new(1), "i\x06", "i\x00")
+    assert_equal 0, zero.raw
+    assert_raises(RangeError) { zero.scope }
+    assert_raises(TypeError) { SnapshotMachines.__send__(:__scope_of, 1) }
+  end
+
   # Runs the block with every reader in `names` of `klass` raising.
   def with_raising_readers(klass, *names)
     names.each do |name|

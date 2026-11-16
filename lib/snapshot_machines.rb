@@ -20,7 +20,8 @@ module SnapshotMachines
     end
 
     # The scope of the catalog that issued this id.
-    def scope = SnapshotMachines.__send__(:__scope_of, raw)
+    # Read natively from the struct, never through the reader.
+    def scope = SnapshotMachines.__send__(:__scope_of, self)
   end
 
   # The core's `Pending`: an open attempt, its SnapshotId and the SnapshotId

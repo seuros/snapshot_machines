@@ -5,9 +5,10 @@ Gem::Specification.new do |spec|
   spec.version = SnapshotMachines::VERSION
   spec.authors = ['Abdelkader Boudih']
   spec.email = ['oss@seuros.com']
-  spec.summary = 'Bounded native snapshot manifest planning for Ruby'
-  spec.description = 'An allocation-free Rust manifest model with a thin Ruby bridge. ' \
-                     'No snapshot bytes or durable storage.'
+  spec.summary = 'Snapshot manifest catalog with restore plans, over a native Rust core'
+  spec.description = 'Tracks which snapshot builds on which, refuses to build on anything but the latest, ' \
+                     'keeps the old chain until a new full snapshot commits, and answers which manifests a ' \
+                     'restore needs, in order. Holds manifests only: no snapshot bytes, no storage.'
   spec.homepage = 'https://github.com/seuros/snapshot_machines'
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 4.0.0'

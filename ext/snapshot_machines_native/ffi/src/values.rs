@@ -112,9 +112,10 @@ pub fn checked_id(ruby: &Ruby, raw: Value) -> Result<u64, Error> {
     id_of(ruby, raw).map(SnapshotId::raw)
 }
 
-/// `SnapshotId#scope`.
-pub fn id_scope(ruby: &Ruby, raw: Value) -> Result<u16, Error> {
-    id_of(ruby, raw).map(SnapshotId::scope)
+/// `SnapshotId#scope`: the id read natively, exactly a `SnapshotId` with
+/// its `raw` from the struct and checked again, never through the reader.
+pub fn id_scope(ruby: &Ruby, value: Value) -> Result<u16, Error> {
+    snapshot_id(ruby, value).map(SnapshotId::scope)
 }
 
 /// `Pending.new(id, base)`: `Pending::new`, `RangeError` on `None`.
