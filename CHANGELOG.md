@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.4](https://github.com/seuros/snapshot_machines/compare/snapshot_machines/v0.3.3...snapshot_machines/v0.3.4) (2026-11-16)
+
+
+### Bug Fixes
+
+* fix wrapped classes at load so building a value runs no Ruby ([119e9e1](https://github.com/seuros/snapshot_machines/commit/119e9e16094df18ac1dbae0519c4040e5edbcd49))
+
 ## [0.3.3](https://github.com/seuros/snapshot_machines/compare/snapshot_machines/v0.3.2...snapshot_machines/v0.3.3) (2026-11-16)
 
 
