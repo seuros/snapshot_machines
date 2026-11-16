@@ -1,6 +1,7 @@
 //! Private initialization boundary.
 use crate::{Catalog, classes, values};
 use magnus::{Error, Ruby, function, method, prelude::*};
+use matryona_machines::ruby::Class;
 
 #[magnus::init]
 fn init(ruby: &Ruby) -> Result<(), Error> {
@@ -29,5 +30,8 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
     class.define_method("abort", method!(Catalog::abort, 1))?;
     class.define_method("pending", method!(Catalog::pending, 0))?;
     class.define_method("latest", method!(Catalog::latest, 0))?;
-    class.define_method("restore_plan", method!(Catalog::restore_plan, 1))
+    class.define_method("restore_plan", method!(Catalog::restore_plan, 1))?;
+    // `new`, `with_scope` and `restored` answer a Catalog: its class is fixed
+    // now, before any of them runs.
+    Class::pin_wrapped::<Catalog>(ruby, class).map(drop)
 }
