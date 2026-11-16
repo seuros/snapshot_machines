@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/seuros/snapshot_machines/compare/snapshot_machines/v0.3.2...snapshot_machines/v0.3.3) (2026-11-16)
+
+
+### Bug Fixes
+
+* read SnapshotId#scope natively and drop catalog indexing ([4cf221f](https://github.com/seuros/snapshot_machines/commit/4cf221feeeea681939a817187c901e2596f9d862))
+
 ## [0.3.2](https://github.com/seuros/snapshot_machines/compare/snapshot_machines/v0.3.1...snapshot_machines/v0.3.2) (2026-11-14)
 
 
