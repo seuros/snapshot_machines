@@ -274,7 +274,7 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "snapshot-machines"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "matryona-machines",
  "periscope-machines",
@@ -282,7 +282,7 @@ dependencies = [
 
 [[package]]
 name = "snapshot_machines_native"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "magnus",
  "matryona-machines",
